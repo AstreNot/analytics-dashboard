@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analytics Dashboard Demo</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 720px; padding: 0 1rem; }
+  .row { margin: 1rem 0; }
+  .bar { height: 14px; background: #4c6ef5; border-radius: 3px; }
+  .bar.out { background: #20c997; }
+  small { color: #666; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid #ddd; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<h1>Sell-in vs sell-out by channel</h1>
+<p><small>Synthetic data. Bars are scaled to the largest value.</small></p>
+<div id="chart">Loading...</div>
+<h2>Feeds</h2>
+<p><small>Each customer is read from one period type. Sell-in stops at the customer's last sell-out month.</small></p>
+<table id="feeds"><tr><th>Channel</th><th>Customer</th><th>Feed</th><th>As of</th></tr></table>
+<script>
+fetch("/api/summary").then(r => r.json()).then(rows => {
+  const max = Math.max(...rows.map(r => Math.max(r.sell_in, r.sell_out, r.target)));
+  document.getElementById("chart").innerHTML = rows.map(r => `
+    <div class="row"><b>${r.channel}</b>
+      <small>sell-through ${(r.sell_through * 100).toFixed(0)}% | target attainment ${(r.target_attainment * 100).toFixed(0)}%</small>
+      <div class="bar" style="width:${r.sell_in / max * 100}%"></div>
+      <div class="bar out" style="width:${r.sell_out / max * 100}%"></div>
+    </div>`).join("");
+});
+fetch("/api/feeds").then(r => r.json()).then(rows => {
+  document.getElementById("feeds").insertAdjacentHTML("beforeend", rows.map(r =>
+    `<tr><td>${r.channel}</td><td>${r.customer}</td><td>${r.feed_type}</td><td>${r.as_of_month}</td></tr>`).join(""));
+});
+</script>
+</body>
+</html>
