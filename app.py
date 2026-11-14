@@ -44,21 +44,27 @@ def build():
     return con
 
 
+def query(sql):
+    cur = build().execute(sql)
+    cols = [c[0] for c in cur.description]
+    return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+
 def summary():
-    return build().execute("""
+    return query("""
         SELECT f.channel, SUM(f.sell_in) AS sell_in, SUM(f.sell_out) AS sell_out,
                ANY_VALUE(t.target) AS target,
-               ROUND(SUM(f.sell_out) * 1.0 / SUM(f.sell_in), 3) AS sell_through,
-               ROUND(SUM(f.sell_in) * 1.0 / ANY_VALUE(t.target), 3) AS target_attainment
+               ROUND(SUM(f.sell_out) * 1.0 / SUM(f.sell_in), 3)::DOUBLE AS sell_through,
+               ROUND(SUM(f.sell_in) * 1.0 / ANY_VALUE(t.target), 3)::DOUBLE AS target_attainment
         FROM fact f
         JOIN (SELECT channel, SUM(value) AS target FROM target
               WHERE month::DATE <= (SELECT MAX(month) FROM fact) GROUP BY channel) t USING (channel)
-        GROUP BY f.channel ORDER BY f.channel""").df().to_dict("records")
+        GROUP BY f.channel ORDER BY f.channel""")
 
 
 def feeds():
-    return build().execute("""SELECT f.channel, f.customer, f.feed_type, a.as_of_month::VARCHAR AS as_of_month
-                              FROM feed f JOIN last_seen a USING (channel, customer) ORDER BY 1, 2""").df().to_dict("records")
+    return query("""SELECT f.channel, f.customer, f.feed_type, a.as_of_month::VARCHAR AS as_of_month
+                              FROM feed f JOIN last_seen a USING (channel, customer) ORDER BY 1, 2""")
 
 
 def reconcile(rows, reference, threshold=0.001):
