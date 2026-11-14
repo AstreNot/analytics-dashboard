@@ -62,7 +62,7 @@ python generate_data.py
 python -m pytest -q
 python -m uvicorn app:app --port 8000     # http://localhost:8000
 ```
-Needs duckdb, fastapi, uvicorn, httpx and pytest.
+Needs numpy, duckdb, fastapi, uvicorn, httpx and pytest.
 
 ---
 Part of the portfolio at https://astrenot.github.io/Arkananta-Website/. Synthetic data only.
